@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 · 校园二手</title>
+    <link rel="stylesheet" href="../../public/style.css">
+</head>
+<body>
+    <header class="header-wrapper">
+        <a href="../index/index.html" class="logo">🏫 校园二手</a>
+        <div class="right-panel">
+            <a href="../publish/publish.html" class="nav-link publish-btn">📤 发布闲置</a>
+            <a href="../favorites/favorites.html" class="nav-link">❤️ 收藏</a>
+            <a href="../my/my.html" class="nav-link" style="color:var(--primary-color);">👤 我的</a>
+        </div>
+    </header>
+
+    <div class="profile-container" id="profile-container">
+        <div class="loading-state" style="text-align:center;padding:60px;color:var(--text-light);">
+            <div style="font-size:2rem;margin-bottom:12px;">⏳</div>
+            <p>加载中...</p>
+        </div>
+    </div>
+
+    <!-- 编辑资料模态框 -->
+    <div class="modal-mask" id="edit-modal" style="display:none;">
+        <div class="modal-content" style="max-width:500px;">
+            <button class="close-btn" data-close>&times;</button>
+            <h2 class="modal-title">✏️ 编辑资料</h2>
+            <form id="edit-profile-form">
+                <div class="form-group">
+                    <label>昵称</label>
+                    <input type="text" id="edit-nickname" placeholder="输入昵称">
+                </div>
+                <div class="form-group">
+                    <label>手机号</label>
+                    <input type="text" id="edit-phone" placeholder="输入手机号">
+                </div>
+                <div class="form-group">
+                    <label>微信号</label>
+                    <input type="text" id="edit-wechat" placeholder="输入微信号">
+                </div>
+                <div class="form-group">
+                    <label>学校</label>
+                    <input type="text" id="edit-school" placeholder="输入学校名称">
+                </div>
+                <button type="submit" class="btn-submit">💾 保存修改</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="../../utils/api.js"></script>
+    <script type="module" src="my.js"></script>
+</body>
+</html>
