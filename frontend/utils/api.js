@@ -15,6 +15,16 @@ export function isLoggedIn() {
     return !!getToken();
 }
 
+// 获取当前域名（自动适配本地和公网）
+function getBaseUrl() {
+    // 如果是本地开发，使用 localhost:3008
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3008';
+    }
+    // 公网环境，使用当前页面的域名（cpolar 域名）
+    return window.location.origin;
+}
+
 async function request(url, options = {}) {
     const token = getToken();
     const headers = {
@@ -163,6 +173,14 @@ export async function uploadImages(files) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     return data;
+}
+
+// ========== 图片工具（自动适配域名） ==========
+export function getImageUrl(path) {
+    if (!path) return '/image/no-image.jpg';
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) return path;
+    return '/' + path;
 }
 
 // ========== AI 智能客服 ==========

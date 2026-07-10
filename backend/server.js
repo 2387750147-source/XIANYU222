@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 const { pool, initDatabase } = require('./config/db');
 const rateLimit = require('express-rate-limit');
@@ -23,6 +24,9 @@ const favoritesRoutes = require('./routes/favorites');
 const uploadRoutes = require('./routes/upload');
 const chatRoutes = require('./routes/chat');
 
+
+
+
 const app = express();
 app.set('trust proxy', 1);
 
@@ -33,11 +37,31 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// ========== 静态文件服务 ==========
+// 前端静态文件
 app.use(express.static(path.join(__dirname, '../frontend')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// uploads 目录 - 图片存储
+const uploadPath = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true });
+    console.log('📁 创建 uploads 目录:', uploadPath);
+}
+app.use('/uploads', express.static(uploadPath));
+console.log('📁 图片目录:', uploadPath);
+
+// image 目录 - 默认图片
+const imagePath = path.join(__dirname, '../frontend/image');
+if (!fs.existsSync(imagePath)) {
+    fs.mkdirSync(imagePath, { recursive: true });
+    console.log('📁 创建 image 目录:', imagePath);
+}
+app.use('/image', express.static(imagePath));
+// =================================
 
 initDatabase().then(() => console.log('✅ 数据库初始化完成')).catch(err => {
-    console.warn('⚠️ 数据库连接失败，将使用模拟数据:', err.message);
+    console.warn('⚠️ 数据库连接失败:', err.message);
 });
 
 const loginLimiter = rateLimit({
@@ -46,7 +70,6 @@ const loginLimiter = rateLimit({
     message: { error: '登录尝试过多，请15分钟后再试' }
 });
 
-// ========== 路由注册 ==========
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/products', productsRoutes);

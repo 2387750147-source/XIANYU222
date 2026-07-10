@@ -8,7 +8,8 @@ router.post('/image', auth, upload.single('image'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: '请选择图片' });
     }
-    // 只返回相对路径
+    // 只返回相对路径，不返回完整URL
+    // 这样公网和本地都能正常显示
     res.json({ success: true, url: `/uploads/${req.file.filename}` });
 });
 
