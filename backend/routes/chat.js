@@ -297,11 +297,12 @@ router.post('/chat', async (req, res) => {
         const options = {
             hostname: 'aip.baidubce.com',
             port: 443,
-            path: '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token=' + accessToken,
+            path: '/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData)
+                'Content-Length': Buffer.byteLength(postData),
+                'Authorization': 'Bearer ' + accessToken
             }
         };
 
