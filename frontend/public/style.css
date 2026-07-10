@@ -590,6 +590,161 @@ body {
 .profile-product-card .info .status { font-size: 0.75rem; color: var(--text-light); }
 
 /* ===== 响应式 ===== */
+/* ===== 客服聊天窗口 ===== */
+.chat-float-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--primary-color), #ff8c00);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,106,0,0.4);
+    z-index: 100;
+    transition: all 0.3s;
+}
+.chat-float-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(255,106,0,0.5);
+}
+.chat-float-btn.active {
+    transform: rotate(45deg);
+}
+
+.chat-container {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 360px;
+    max-width: 90vw;
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    z-index: 99;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+.chat-container.show {
+    display: flex;
+    animation: slideUp 0.3s;
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-header {
+    background: linear-gradient(135deg, var(--primary-color), #ff8c00);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-header .title {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.chat-header .close-btn {
+    color: rgba(255,255,255,0.8);
+    font-size: 1.4rem;
+    cursor: pointer;
+}
+.chat-header .close-btn:hover { color: white; }
+
+.chat-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    max-height: 400px;
+    background: #fafafa;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+.chat-message {
+    display: flex;
+    margin-bottom: 16px;
+    gap: 10px;
+}
+.chat-message.user { justify-content: flex-end; }
+.chat-message.user .msg-content {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 16px 16px 0 16px;
+}
+.chat-message.bot { justify-content: flex-start; }
+.chat-message.bot .msg-content {
+    background: white;
+    color: var(--text-dark);
+    border-radius: 16px 16px 16px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.chat-message .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.chat-message.user .avatar { background: var(--primary-light); color: var(--primary-color); }
+.chat-message.bot .avatar { background: var(--primary-color); color: white; }
+.chat-message .msg-content {
+    max-width: 75%;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.chat-input-area {
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    gap: 10px;
+}
+.chat-input-area input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 24px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s;
+}
+.chat-input-area input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255,106,0,0.1);
+}
+.chat-input-area button {
+    padding: 10px 20px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.chat-input-area button:hover { background: var(--primary-hover); }
+.chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+
 @media (max-width: 768px) {
     .header-wrapper { flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
     .right-panel { flex-wrap: wrap; justify-content: center; }

@@ -166,12 +166,16 @@ export async function uploadImages(files) {
 }
 // 在你的 api.js 或工具文件里
 export function getImageUrl(path) {
-    // 如果 path 已经是完整 URL 就直接返回
     if (path && path.startsWith('http')) return path;
-    
-    // 否则根据环境拼接
     const baseUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3008' 
-        : window.location.origin; // 用当前页面的域名
+        : window.location.origin;
     return `${baseUrl}${path}`;
+}
+
+export async function chat(message) {
+    return request('/chat/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message })
+    });
 }
