@@ -46,6 +46,7 @@ const loginLimiter = rateLimit({
     message: { error: '登录尝试过多，请15分钟后再试' }
 });
 
+// ========== 路由注册 ==========
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/products', productsRoutes);

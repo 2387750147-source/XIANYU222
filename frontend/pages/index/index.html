@@ -13,7 +13,7 @@
         <div class="right-panel">
             <a href="../publish/publish.html" class="nav-link publish-btn">📤 发布闲置</a>
             <a href="../favorites/favorites.html" class="nav-link">❤️ 收藏</a>
-            <a href="../profile/profile.html" class="nav-link">👤 我的</a>
+            <a href="../my/my.html" class="nav-link">👤 我的</a>
             <div class="auth-buttons" id="auth-buttons">
                 <button class="auth-btn btn-login" id="login-btn">登录</button>
                 <button class="auth-btn btn-register" id="register-btn">注册</button>
@@ -96,6 +96,27 @@
                 <button type="button" class="btn-submit" id="do-register">注册</button>
                 <div class="switch-tip">已有账号？<span class="switch-link" id="to-login">立即登录</span></div>
             </form>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- AI 智能客服聊天窗口 -->
+    <!-- ============================================ -->
+    <div class="chat-float-btn" id="chat-toggle">💬</div>
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+            <div class="title">🤖 小橘 AI 客服</div>
+            <button class="close-btn" id="chat-close">✕</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-message bot">
+                <div class="avatar">🍊</div>
+                <div class="msg-content">您好！我是智能客服小橘，请问有什么可以帮您？</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="输入您的问题..." autocomplete="off">
+            <button id="chat-send">发送</button>
         </div>
     </div>
 

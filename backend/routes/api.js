@@ -38,7 +38,7 @@ async function request(url, options = {}) {
     return data;
 }
 
-// ========== 认证 ==========
+// 认证
 export async function login(username, password) {
     const data = await request('/auth/login', {
         method: 'POST',
@@ -63,7 +63,7 @@ export function logout() {
     localStorage.removeItem(USER_KEY);
 }
 
-// ========== 用户 ==========
+// 用户
 export async function getMe() {
     return request('/users/me');
 }
@@ -79,7 +79,7 @@ export async function getUserInfo(userId) {
     return request(`/users/${userId}`);
 }
 
-// ========== 商品 ==========
+// 商品
 export async function getProducts(params = {}) {
     const query = new URLSearchParams(params).toString();
     return request(`/products?${query}`);
@@ -114,12 +114,12 @@ export async function getUserProducts(userId, status) {
     return request(`/products/user/${userId}${query}`);
 }
 
-// ========== 分类 ==========
+// 分类
 export async function getCategories() {
     return request('/categories');
 }
 
-// ========== 收藏 ==========
+// 收藏
 export async function getFavorites() {
     return request('/favorites');
 }
@@ -136,7 +136,7 @@ export async function checkFavorite(productId) {
     return request(`/favorites/check/${productId}`);
 }
 
-// ========== 上传 ==========
+// 上传
 export async function uploadImage(file) {
     const formData = new FormData();
     formData.append('image', file);
@@ -164,6 +164,7 @@ export async function uploadImages(files) {
     if (!res.ok) throw new Error(data.error);
     return data;
 }
+// 在你的 api.js 或工具文件里
 export function getImageUrl(path) {
     if (path && path.startsWith('http')) return path;
     const baseUrl = window.location.hostname === 'localhost' 
@@ -172,7 +173,6 @@ export function getImageUrl(path) {
     return `${baseUrl}${path}`;
 }
 
-// ========== AI 智能客服 ==========
 export async function chat(message) {
     return request('/chat/chat', {
         method: 'POST',

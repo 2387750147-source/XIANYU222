@@ -14,6 +14,7 @@ class App {
         this.loadCategories();
         this.loadProducts();
         this.updateAuthUI();
+        this.bindChatEvents();  // 绑定客服事件
     }
 
     cacheDOM() {
@@ -220,7 +221,6 @@ class App {
         this.currentKeyword = this.searchInput.value.trim();
         this.currentCategory = this.searchCategory.value;
         this.currentPage = 1;
-        // 高亮分类导航
         this.categoryNav.querySelectorAll('.category-item').forEach(el => {
             el.classList.toggle('active', el.dataset.id === this.currentCategory);
         });
@@ -289,6 +289,106 @@ class App {
             this.updateAuthUI();
             this.loadProducts();
         }
+    }
+
+    // ============================================
+    // AI 智能客服
+    // ============================================
+    bindChatEvents() {
+        const toggleBtn = document.getElementById('chat-toggle');
+        const closeBtn = document.getElementById('chat-close');
+        const chatContainer = document.getElementById('chat-container');
+        const sendBtn = document.getElementById('chat-send');
+        const chatInput = document.getElementById('chat-input');
+        
+        if (!toggleBtn || !chatContainer) return;
+        
+        toggleBtn.addEventListener('click', () => {
+            chatContainer.classList.toggle('show');
+            toggleBtn.classList.toggle('active');
+            if (chatContainer.classList.contains('show')) {
+                setTimeout(() => chatInput?.focus(), 300);
+            }
+        });
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                chatContainer.classList.remove('show');
+                toggleBtn.classList.remove('active');
+            });
+        }
+        
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => this.sendMessage());
+        }
+        
+        if (chatInput) {
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.sendMessage();
+            });
+        }
+    }
+
+    async sendMessage() {
+        const input = document.getElementById('chat-input');
+        const messages = document.getElementById('chat-messages');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // 添加用户消息
+        messages.insertAdjacentHTML('beforeend', `
+            <div class="chat-message user">
+                <div class="msg-content">${this.escapeText(message)}</div>
+                <div class="avatar">👤</div>
+            </div>
+        `);
+        
+        input.value = '';
+        messages.scrollTop = messages.scrollHeight;
+        
+        // 加载状态
+        const loadingId = 'loading-' + Date.now();
+        messages.insertAdjacentHTML('beforeend', `
+            <div class="chat-message bot" id="${loadingId}">
+                <div class="avatar">🍊</div>
+                <div class="msg-content">思考中...</div>
+            </div>
+        `);
+        messages.scrollTop = messages.scrollHeight;
+        
+        try {
+            const { chat } = await import('../../utils/api.js');
+            const result = await chat(message);
+            
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
+            
+            messages.insertAdjacentHTML('beforeend', `
+                <div class="chat-message bot">
+                    <div class="avatar">🍊</div>
+                    <div class="msg-content">${this.escapeText(result.reply || '抱歉，我没有理解您的问题~')}</div>
+                </div>
+            `);
+            messages.scrollTop = messages.scrollHeight;
+        } catch (err) {
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
+            
+            messages.insertAdjacentHTML('beforeend', `
+                <div class="chat-message bot">
+                    <div class="avatar">🍊</div>
+                    <div class="msg-content">⚠️ 服务暂时不可用，请稍后再试~</div>
+                </div>
+            `);
+            messages.scrollTop = messages.scrollHeight;
+        }
+    }
+
+    escapeText(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 
