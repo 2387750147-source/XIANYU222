@@ -174,6 +174,13 @@ export async function uploadImages(files) {
     if (!res.ok) throw new Error(data.error);
     return data;
 }
+export function getImageUrl(path) {
+    if (path && path.startsWith('http')) return path;
+    const baseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3008' 
+        : window.location.origin;
+    return `${baseUrl}${path}`;
+}
 
 // ========== 图片工具（自动适配域名） ==========
 export function getImageUrl(path) {

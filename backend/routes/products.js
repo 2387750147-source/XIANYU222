@@ -1,13 +1,62 @@
 const express = require('express');
 const { pool } = require('../config/db');
+const { mockProducts, mockCategories } = require('../config/mockData');
 const auth = require('../middleware/auth');
 const router = express.Router();
 
-// 获取商品列表
+let dbAvailable = true;
+
+async function checkDbConnection() {
+    try {
+        await pool.getConnection();
+        dbAvailable = true;
+    } catch {
+        dbAvailable = false;
+    }
+}
+
+checkDbConnection();
+
 router.get('/', async (req, res) => {
     const { category_id, keyword, status, page = 1, limit = 20, sort = 'new' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitNum = parseInt(limit);
+
+    if (!dbAvailable) {
+        let products = [...mockProducts];
+        if (category_id) {
+            products = products.filter(p => p.category_id == category_id);
+        }
+        if (keyword) {
+            const kw = keyword.toLowerCase();
+            products = products.filter(p => 
+                p.title.toLowerCase().includes(kw) || 
+                p.description.toLowerCase().includes(kw)
+            );
+        }
+        if (status && status !== 'on_sale') {
+            products = products.filter(p => p.status === status);
+        }
+        if (sort === 'new') {
+            products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        } else if (sort === 'price_asc') {
+            products.sort((a, b) => a.price - b.price);
+        } else if (sort === 'price_desc') {
+            products.sort((a, b) => b.price - a.price);
+        } else if (sort === 'hot') {
+            products.sort((a, b) => b.view_count - a.view_count);
+        }
+        const total = products.length;
+        products = products.slice(offset, offset + limitNum);
+        return res.json({
+            success: true,
+            data: products,
+            total,
+            page: parseInt(page),
+            limit: limitNum,
+            pages: Math.ceil(total / limitNum)
+        });
+    }
 
     let sql = `
         SELECT p.*, u.username, u.nickname, u.avatar,
@@ -32,7 +81,6 @@ router.get('/', async (req, res) => {
         params.push(status);
     }
 
-    // 排序
     if (sort === 'new') {
         sql += ' ORDER BY p.created_at DESC';
     } else if (sort === 'price_asc') {
@@ -43,7 +91,6 @@ router.get('/', async (req, res) => {
         sql += ' ORDER BY p.view_count DESC';
     }
 
-    // 获取总数 - 使用 query
     let countSql = 'SELECT COUNT(*) as total FROM products p WHERE p.status = "on_sale"';
     const countParams = [];
 
@@ -60,149 +107,171 @@ router.get('/', async (req, res) => {
         countParams.push(status);
     }
 
-    const [countResult] = await pool.query(countSql, countParams);
-    const total = countResult[0]?.total || 0;
+    try {
+        const [countResult] = await pool.query(countSql, countParams);
+        const total = countResult[0]?.total || 0;
 
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(limitNum, offset);
+        sql += ' LIMIT ? OFFSET ?';
+        params.push(limitNum, offset);
 
-    const [rows] = await pool.query(sql, params);
+        const [rows] = await pool.query(sql, params);
 
-    const products = rows.map(p => {
-        const images = p.images ? JSON.parse(p.images) : [];
-        return {
-            ...p,
-            images,
-            cover: images.length > 0 ? images[0] : null
-        };
-    });
+        const products = rows.map(p => {
+            const images = p.images ? JSON.parse(p.images) : [];
+            return {
+                ...p,
+                images
+            };
+        });
 
-    res.json({
-        data: products,
-        pagination: {
+        res.json({
+            success: true,
+            data: products,
+            total,
             page: parseInt(page),
             limit: limitNum,
-            total,
-            totalPages: Math.ceil(total / limitNum)
-        }
-    });
+            pages: Math.ceil(total / limitNum)
+        });
+    } catch (err) {
+        console.error('获取商品列表失败:', err);
+        res.status(500).json({ success: false, message: '获取商品列表失败' });
+    }
 });
 
-// 获取商品详情
-router.get('/:id', async (req, res) => {
+router.get('/categories', async (req, res) => {
+    if (!dbAvailable) {
+        return res.json({ success: true, data: mockCategories });
+    }
     try {
-        const [rows] = await pool.query(
-            `SELECT p.*, u.username, u.nickname, u.avatar, u.phone as user_phone, u.wechat as user_wechat,
-                    c.name as category_name, c.icon as category_icon
-             FROM products p
-             LEFT JOIN users u ON p.user_id = u.id
-             LEFT JOIN categories c ON p.category_id = c.id
-             WHERE p.id = ?`,
-            [req.params.id]
-        );
-        if (rows.length === 0) {
-            return res.status(404).json({ error: '商品不存在' });
+        const [rows] = await pool.query('SELECT * FROM categories ORDER BY sort_order');
+        res.json({ success: true, data: rows });
+    } catch (err) {
+        console.error('获取分类失败:', err);
+        res.json({ success: true, data: mockCategories });
+    }
+});
+
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!dbAvailable) {
+        const product = mockProducts.find(p => p.id == id);
+        if (!product) {
+            return res.status(404).json({ success: false, message: '商品不存在' });
         }
+        product.view_count++;
+        return res.json({ success: true, data: product });
+    }
+
+    try {
+        await pool.query('UPDATE products SET view_count = view_count + 1 WHERE id = ?', [id]);
+        const [rows] = await pool.query(`
+            SELECT p.*, u.username, u.nickname, u.avatar,
+                   c.name as category_name, c.icon as category_icon
+            FROM products p
+            LEFT JOIN users u ON p.user_id = u.id
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.id = ?
+        `, [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: '商品不存在' });
+        }
+
         const product = rows[0];
         product.images = product.images ? JSON.parse(product.images) : [];
 
-        await pool.query('UPDATE products SET view_count = view_count + 1 WHERE id = ?', [req.params.id]);
-
-        res.json(product);
+        res.json({ success: true, data: product });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: '服务器错误' });
+        console.error('获取商品详情失败:', err);
+        res.status(500).json({ success: false, message: '获取商品详情失败' });
     }
 });
 
-// 发布商品
 router.post('/', auth, async (req, res) => {
     const { title, description, price, category_id, contact_phone, contact_wechat, images } = req.body;
+
     if (!title || !price) {
-        return res.status(400).json({ error: '标题和价格不能为空' });
+        return res.status(400).json({ success: false, message: '标题和价格不能为空' });
     }
+
     try {
-        const imagesJson = JSON.stringify(images || []);
-        const [result] = await pool.query(
-            `INSERT INTO products (title, description, price, category_id, contact_phone, contact_wechat, images, user_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [title, description, price, category_id || null, contact_phone || '', contact_wechat || '', imagesJson, req.user.id]
-        );
-        res.json({ success: true, id: result.insertId, message: '发布成功' });
+        const [result] = await pool.query(`
+            INSERT INTO products (title, description, price, category_id, contact_phone, contact_wechat, images, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [title, description, price, category_id, contact_phone, contact_wechat, JSON.stringify(images), req.user.id]);
+
+        res.json({
+            success: true,
+            data: {
+                id: result.insertId,
+                title,
+                description,
+                price,
+                category_id,
+                contact_phone,
+                contact_wechat,
+                images
+            }
+        });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: '服务器错误' });
+        console.error('发布商品失败:', err);
+        res.status(500).json({ success: false, message: '发布商品失败' });
     }
 });
 
-// 编辑商品
 router.put('/:id', auth, async (req, res) => {
-    const { title, description, price, category_id, contact_phone, contact_wechat, images, status } = req.body;
-    if (!title || !price) {
-        return res.status(400).json({ error: '标题和价格不能为空' });
-    }
+    const { id } = req.params;
+    const { title, description, price, category_id, status, contact_phone, contact_wechat, images } = req.body;
+
     try {
-        const [check] = await pool.query('SELECT user_id FROM products WHERE id = ?', [req.params.id]);
-        if (check.length === 0) {
-            return res.status(404).json({ error: '商品不存在' });
-        }
-        if (check[0].user_id !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: '无权修改此商品' });
+        const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: '商品不存在' });
         }
 
-        const imagesJson = images ? JSON.stringify(images) : null;
-        await pool.query(
-            `UPDATE products SET
-                title = ?, description = ?, price = ?, category_id = ?,
-                contact_phone = ?, contact_wechat = ?, images = COALESCE(?, images), status = ?
-             WHERE id = ?`,
-            [title, description, price, category_id || null, contact_phone || '', contact_wechat || '', imagesJson, status || 'on_sale', req.params.id]
-        );
-        res.json({ success: true, message: '更新成功' });
+        if (rows[0].user_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: '无权修改此商品' });
+        }
+
+        const updateData = {};
+        if (title) updateData.title = title;
+        if (description) updateData.description = description;
+        if (price) updateData.price = price;
+        if (category_id) updateData.category_id = category_id;
+        if (status) updateData.status = status;
+        if (contact_phone) updateData.contact_phone = contact_phone;
+        if (contact_wechat) updateData.contact_wechat = contact_wechat;
+        if (images) updateData.images = JSON.stringify(images);
+
+        await pool.query('UPDATE products SET ? WHERE id = ?', [updateData, id]);
+
+        res.json({ success: true, message: '修改成功' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: '服务器错误' });
+        console.error('修改商品失败:', err);
+        res.status(500).json({ success: false, message: '修改商品失败' });
     }
 });
 
-// 删除商品
 router.delete('/:id', auth, async (req, res) => {
+    const { id } = req.params;
+
     try {
-        const [check] = await pool.query('SELECT user_id FROM products WHERE id = ?', [req.params.id]);
-        if (check.length === 0) {
-            return res.status(404).json({ error: '商品不存在' });
+        const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: '商品不存在' });
         }
-        if (check[0].user_id !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: '无权删除此商品' });
+
+        if (rows[0].user_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: '无权删除此商品' });
         }
-        await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+
+        await pool.query('DELETE FROM products WHERE id = ?', [id]);
+
         res.json({ success: true, message: '删除成功' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: '服务器错误' });
-    }
-});
-
-// 获取用户发布的商品
-router.get('/user/:userId', async (req, res) => {
-    const { status } = req.query;
-    let sql = 'SELECT * FROM products WHERE user_id = ?';
-    const params = [req.params.userId];
-    if (status) {
-        sql += ' AND status = ?';
-        params.push(status);
-    }
-    sql += ' ORDER BY created_at DESC';
-    try {
-        const [rows] = await pool.query(sql, params);
-        const products = rows.map(p => ({
-            ...p,
-            images: p.images ? JSON.parse(p.images) : []
-        }));
-        res.json(products);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: '服务器错误' });
+        console.error('删除商品失败:', err);
+        res.status(500).json({ success: false, message: '删除商品失败' });
     }
 });
 

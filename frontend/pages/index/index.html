@@ -122,5 +122,81 @@
 
     <script type="module" src="../../utils/api.js"></script>
     <script type="module" src="index.js"></script>
+
+    <!-- 客服聊天悬浮按钮 -->
+    <div class="chat-float-btn" id="chat-float-btn">💬</div>
+
+    <!-- 客服聊天窗口 -->
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+            <div class="title">🤖 智能客服小橘</div>
+            <button class="close-btn" id="chat-close-btn">&times;</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-message bot">
+                <div class="avatar">🤖</div>
+                <div class="msg-content">您好！我是智能客服小橘，很高兴为您服务~ 请问有什么可以帮您的？</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="输入您的问题..." autocomplete="off">
+            <button id="chat-send-btn">发送</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { chat } from '../../utils/api.js';
+
+        const floatBtn = document.getElementById('chat-float-btn');
+        const chatContainer = document.getElementById('chat-container');
+        const chatCloseBtn = document.getElementById('chat-close-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+
+        floatBtn.addEventListener('click', () => {
+            floatBtn.classList.toggle('active');
+            chatContainer.classList.toggle('show');
+        });
+
+        chatCloseBtn.addEventListener('click', () => {
+            floatBtn.classList.remove('active');
+            chatContainer.classList.remove('show');
+        });
+
+        function appendMessage(text, isUser) {
+            const div = document.createElement('div');
+            div.className = `chat-message ${isUser ? 'user' : 'bot'}`;
+            div.innerHTML = `
+                <div class="avatar">${isUser ? '👤' : '🤖'}</div>
+                <div class="msg-content">${text}</div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, true);
+            chatInput.value = '';
+            chatSendBtn.disabled = true;
+
+            try {
+                const result = await chat(text);
+                appendMessage(result.reply || '抱歉，我暂时无法回答这个问题', false);
+            } catch (error) {
+                appendMessage('抱歉，网络连接异常，请稍后再试~', false);
+            } finally {
+                chatSendBtn.disabled = false;
+            }
+        }
+
+        chatSendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
 </body>
 </html>
